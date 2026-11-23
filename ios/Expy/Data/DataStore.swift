@@ -62,6 +62,7 @@ final class DataStore {
     private func commit() {
         save()
         BudgetAlerts.shared.scheduleCheck()
+        CloudBackup.shared.scheduleBackup()
     }
 
     // MARK: - Entries

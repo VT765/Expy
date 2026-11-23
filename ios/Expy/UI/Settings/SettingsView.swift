@@ -16,6 +16,7 @@ struct SettingsView: View {
                     SecuritySettingsSection()
                     BudgetSettingsSection()
                     CategoriesSection()
+                    CloudBackupSection()
                     DataSettingsSection()
                     Text("Expy \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") · data stays on this iPhone")
                         .font(.tFootnote).foregroundStyle(Theme.faint)
@@ -25,7 +26,7 @@ struct SettingsView: View {
             }
             .background(Theme.canvas)
             #if DEBUG
-            .defaultScrollAnchor(Demo.value("-demoAnchor") == "mid" ? UnitPoint(x: 0.5, y: 0.3) : .top)
+            .defaultScrollAnchor(UnitPoint(x: 0.5, y: Demo.value("-demoAnchor").flatMap(Double.init) ?? (Demo.value("-demoAnchor") == "mid" ? 0.3 : 0)))
             #endif
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)

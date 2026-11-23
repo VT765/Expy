@@ -38,9 +38,11 @@ struct ExpyApp: App {
         case .background:
             LockManager.shared.didEnterBackground()
             DataStore.shared.save()
+            if CloudBackup.shared.isEnabled { CloudBackup.shared.backupNow() }
         case .active:
             LockManager.shared.willEnterForeground()
             RecurringEngine.processDue()
+            CloudBackup.shared.backupIfStale()
         default:
             break
         }

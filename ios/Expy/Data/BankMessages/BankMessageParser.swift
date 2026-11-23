@@ -2,11 +2,20 @@ import Foundation
 
 /// Reads Indian bank transaction alerts (SMS or email): UPI, IMPS/NEFT,
 /// card spends and credits from HDFC, BoB, SBI, ICICI, Axis and similar.
-/// Returns nil for anything that isn't a completed transaction (OTPs,
-/// payment requests, upcoming mandates, balance alerts).
+/// Returns nil for anything that isn't a completed transaction: OTPs,
+/// payment requests, upcoming mandates, bill reminders, balance alerts,
+/// failed or declined payments and offers. A real alert must also name the
+/// account/card digits or carry a reference number.
 enum BankMessageParser {
-    private static let notTransactions = ["otp", "one time password", "will be debited", "has requested", "requested money",
-                                          "is due", "due date", "pre-approved", "pre approved", "autopay set", "mandate created"]
+    private static let notTransactions = [
+        // Not money that moved yet
+        "otp", "one time password", "will be debited", "will be credited", "has requested", "requested money",
+        "is due", "due date", "autopay set", "mandate created",
+        // Attempts that didn't go through
+        "failed", "declined", "unsuccessful", "could not be processed", "not processed", "insufficient",
+        // Marketing
+        "pre-approved", "pre approved", "loan offer", "offer", "eligible for", "on your next", "get rs", "get flat", "win rs",
+    ]
 
     private static let banks: [(key: String, words: [String])] = [
         ("HDFC", ["hdfc"]), ("BoB", ["bank of baroda", "bob", "baroda"]), ("SBI", ["state bank", "sbi"]),
@@ -20,15 +29,18 @@ enum BankMessageParser {
         let lower = text.lowercased()
         guard !notTransactions.contains(where: lower.contains),
               let kind = kind(in: lower), let amount = amount(in: text), amount > 0 else { return nil }
-        return ParsedBankMessage(kind: kind, amount: amount, last4: last4(in: text), bank: bank(in: lower),
+        // Real alerts name your account/card or carry a reference; promotions rarely do.
+        let digits = last4(in: text), ref = reference(in: text)
+        guard digits != nil || ref != nil else { return nil }
+        return ParsedBankMessage(kind: kind, amount: amount, last4: digits, bank: bank(in: lower),
                                  counterparty: counterparty(in: text, kind: kind), date: date(in: text, now: now, calendar: calendar),
-                                 reference: reference(in: text))
+                                 reference: ref)
     }
 
     /// Debit or credit, whichever word comes first ("Rs.500 Dr. from A/C … and Cr. to x@upi" is a debit).
     static func kind(in lower: String) -> TransactionKind? {
         let debit = lower.firstMatch(of: /\b(debited|sent|spent|paid|withdrawn|withdrawal|purchased?|transferred|dr\.?)(?=\s|$|\.|,|:)/)
-        let credit = lower.firstMatch(of: /\b(credited|received|deposited|refunded|refund|cr\.?)(?=\s|$|\.|,|:)/)
+        let credit = lower.firstMatch(of: /\b(credited|received|deposited|refunded|refund|reversed|cr\.?)(?=\s|$|\.|,|:)/)
         switch (debit, credit) {
         case let (d?, c?): return d.range.lowerBound <= c.range.lowerBound ? .expense : .credit
         case (_?, nil): return .expense

@@ -60,7 +60,11 @@ enum Exporter {
     static func readBackup(_ url: URL) throws -> BackupFile {
         let ok = url.startAccessingSecurityScopedResource()
         defer { if ok { url.stopAccessingSecurityScopedResource() } }
-        let data = try Data(contentsOf: url)
+        return try decodeBackup(Data(contentsOf: url))
+    }
+
+    /// Decodes and validates backup JSON (any supported version).
+    static func decodeBackup(_ data: Data) throws -> BackupFile {
         guard let b = try? JSONDecoder().decode(BackupFile.self, from: data), b.app == "expy" else {
             throw ExportError(message: "That file isn't a valid Expy backup")
         }

@@ -70,8 +70,31 @@ struct BankMessageParserTests {
         "Rahul has requested money Rs.300 from you on Google Pay",
         "Rs.649 will be debited from your A/c XX6821 on 15-12-26 for Netflix mandate",
         "Your HDFC Bank credit card bill of Rs.12,000 is due on 05-12-26",
+        // Balance-only alert
+        "Avl bal in HDFC Bank A/c XX6821 is Rs.12,450.75 as on 23-11-26",
+        // Failed / declined attempts
+        "Txn of Rs.1,950.00 from HDFC Bank A/c XX6821 to MANISH JADEJA failed. Ref 007303004299",
+        "Your HDFC Bank Card 9912 transaction of Rs.2,499 at AMAZON was declined due to insufficient balance",
+        "UPI payment of Rs.320 from A/C XXXXXX4417 was unsuccessful. Ref:432198765499 -BOB",
+        // Promotions
+        "Get Rs.500 cashback credited on your next spend with BOB Card! T&C apply",
+        "Pre-approved personal loan of Rs.5,00,000 credited instantly. Apply now - HDFC Bank",
+        "Congratulations! You are eligible for an offer: Rs.200 off on recharge paid via HDFC Bank UPI",
+        // Statement summary
+        "HDFC Bank Card XX9912 statement: total due Rs.8,200, min due Rs.400",
     ])
     func ignoresNonTransactions(_ text: String) {
         #expect(BankMessageParser.parse(text, now: now) == nil)
+    }
+
+    @Test func reversalIsACredit() throws {
+        let p = try #require(BankMessageParser.parse("Rs.1950.00 reversed to your HDFC Bank A/c XX6821 on 23-11-26. Ref 007303004202", now: now))
+        #expect(p.kind == .credit)
+        #expect(p.amount == 1950)
+    }
+
+    @Test func transactionWithoutAccountOrReferenceIsIgnored() {
+        // An amount and a money word, but nothing tying it to your account: treated as marketing.
+        #expect(BankMessageParser.parse("Rs.100 credited as welcome bonus! Shop now at example.com", now: now) == nil)
     }
 }
