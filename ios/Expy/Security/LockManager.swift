@@ -76,7 +76,7 @@ final class LockManager {
     enum Attempt { case ok, wrong, cooldown }
 
     func attempt(_ pin: String) -> Attempt {
-        if let until = cooldownUntil, until > Date() { return .cooldown }
+        if let until = cooldownUntil, until > Date.now { return .cooldown }
         if checkPin(pin) {
             failures = 0
             cooldownUntil = nil
@@ -86,7 +86,7 @@ final class LockManager {
         failures += 1
         if failures >= Self.maxAttempts {
             failures = 0
-            cooldownUntil = Date().addingTimeInterval(Self.cooldown)
+            cooldownUntil = Date.now.addingTimeInterval(Self.cooldown)
             return .cooldown
         }
         return .wrong
@@ -143,11 +143,11 @@ final class LockManager {
 
     // MARK: Lifecycle
 
-    func didEnterBackground() { backgroundedAt = Date() }
+    func didEnterBackground() { backgroundedAt = Date.now }
 
     func willEnterForeground() {
         defer { backgroundedAt = nil }
         guard enabled, let t = backgroundedAt else { return }
-        if Date().timeIntervalSince(t) >= autoLock.seconds { isLocked = true }
+        if Date.now.timeIntervalSince(t) >= autoLock.seconds { isLocked = true }
     }
 }

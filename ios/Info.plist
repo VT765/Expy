@@ -13,12 +13,10 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSAppTransportSecurity</key>
+	<key>UILaunchScreen</key>
 	<dict>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
 	</dict>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Connect to an Expy server on your local network.</string>
 </dict>
 </plist>

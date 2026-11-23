@@ -1,46 +1,47 @@
-# Expy for iOS (native SwiftUI)
+# Expy for iOS
 
-This is a native rewrite of the Expy PWA. It talks to the **same Vercel + MongoDB backend**, so the iPhone app and the web app share data.
+**Requirements:** iOS 17+, Xcode 16+ (built with Xcode 27). No third-party dependencies.
 
-**Requirements:** iOS 17+, Xcode 16+.
-
-**Stack:** SwiftUI, SwiftData (on-device storage), Swift Charts, LocalAuthentication (Face ID), the Keychain, App Intents (Siri and Shortcuts) and URLSession sync. There are no third-party dependencies.
+**Stack:** SwiftUI, SwiftData (versioned schema with migrations), Swift Charts, App Intents (Siri, Shortcuts, bank-message action), UserNotifications (recurring reminders, budget alerts), LocalAuthentication (Face ID) and the Keychain. Everything runs on the device; there is no backend.
 
 ```
 Expy/
-  App/        ExpyApp (lifecycle, root view, tabs)
-  Models/     SwiftData models + default categories
-  Data/       DataStore (writes + outbox), periods, analytics, formatting, rates
-  Sync/       API client, sync engine (outbox push → incremental pull), DTOs
-  Security/   Keychain, LockManager (PIN PBKDF2 + Face ID), Session
-  Export/     Native .xlsx writer (styled, formulas), CSV, JSON backup
-  Intents/    “Log Expense” / “Log Credit” App Intents + App Shortcuts
-  UI/         Theme, components, Tap / History / Analytics / Settings / Lock / Login
+  App/        App entry, root tabs (system tab bar + swipe between pages), router, notification delegate
+  Models/     SwiftData models (SchemaV4) and frozen V1–V3 snapshots + migration plan, Money (paise), kinds, defaults
+  Data/       DataStore, analytics, periods, formatting, statement parser
+    Recurring/       recurrence date maths + engine
+    Notifications/   local notifications, budget alerts
+    BankMessages/    bank SMS/email parser, account matcher, review inbox
+  Export/     Native .xlsx writer, CSV, versioned JSON backup (v1 files still restore)
+  Intents/    Log Transaction, Add from Bank Message, App Shortcuts
+  Security/   Keychain, LockManager (PIN PBKDF2 + Face ID)
+  UI/         Tap, History, Analytics, Settings, Review, Lock, Splash, shared components
+ExpyTests/    Swift Testing unit tests (parsers, money, analytics, migrations, backups…)
+ExpyUITests/  XCUITest swipe/tab/category tests
 ```
 
-The project uses Xcode 16 synchronized folders, so new `.swift` files under `Expy/` are included automatically.
+The project uses Xcode synchronized folders, so new `.swift` files under each folder are included automatically. One type per file.
 
 ## Run it
 
 1. Open `ios/Expy.xcodeproj` in Xcode.
-2. Select the **Expy** target → **Signing & Capabilities** → choose your **Team** (your Apple ID). If Xcode complains that the bundle identifier `com.varunthacker.expy` is taken, change it to something unique.
-3. Choose an iPhone simulator, or your own iPhone connected by cable, and press **⌘R**.
+2. **Expy** target → **Signing & Capabilities** → choose your **Team** (your Apple ID). Change the bundle identifier `com.varunthacker.expy` if Xcode says it's taken.
+3. Pick a simulator or your iPhone and press **⌘R**. Run tests with **⌘U**.
 
 ### On your iPhone
 
-- **Settings → Privacy & Security → Developer Mode** → turn it on (iOS asks for this the first time).
-- With a free Apple ID, the app works for **7 days**, then needs reinstalling from Xcode. A paid Apple Developer membership removes that limit and enables TestFlight.
+- **Settings → Privacy & Security → Developer Mode** → on (asked the first time).
+- With a free Apple ID the app runs for **7 days**, then needs reinstalling from Xcode. Data is kept across reinstalls. A paid Apple Developer membership removes the limit and enables TestFlight.
 
-## First launch
+## Data and upgrades
 
-You'll see **Set up Expy** / **Welcome back**, which talks to `https://expy-iota.vercel.app`. To use a different server, tap **Server** on that screen. Sign in with your numeric password, or choose **Use without sync**.
+- Amounts are stored as exact paise. The store is versioned (`Models/Schema`): each install migrates older data in place, after saving a copy in `Application Support/PreMigrationV4`.
+- Back up from **Settings → Data → Export backup** before installing a build that changes the schema.
 
-## Siri, Shortcuts, Back Tap
+## Bank SMS & email
 
-No setup or API key is needed. Logging happens on the device and syncs the next time the app is open and online.
+iOS doesn't let apps read messages. Set up a Shortcuts automation (Message or Email trigger → Run Immediately → Expy's **Add from Bank Message** with Shortcut Input). Steps are in **Settings → Bank SMS & email**, which also has a box to try any message.
 
-- **Shortcuts app:** "Log Expense" and "Log Credit" appear under **Expy** automatically. Each one asks for a category, an amount and an optional note.
-- **Siri:** "Log expense in Expy" / "Log credit in Expy".
-- **Back Tap:** Settings → Accessibility → Touch → Back Tap → Double Tap → **Log Expense**.
-- **Action button / Control Center / Lock Screen widget:** add the **Log Expense** shortcut.
-- **URL prefill:** `expy://add?amount=80&cat=Food&type=expense&note=Chai`.
+## Debug launch arguments
+
+`-seedDemo` sample data · `-solo history|analytics|settings` single screen · `-startTab 0…3` · `-noSplash` · `-splashAt 0.4` freeze the splash · `-demoAmount 250`, `-demoCredit`, `-demoTransfer`, `-demoInbox`, `-demoAnchor 0.5` for screenshots. Debug builds only.
