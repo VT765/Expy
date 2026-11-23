@@ -34,7 +34,7 @@ Collections (`transactions`, `categories`, `budgets`, `settings`, plus `ratelimi
 |---|---|---|
 | `MONGODB_URI` | ✅ | Atlas connection string |
 | `JWT_SECRET` | ✅ | 32+ random chars, used to sign 30-day login tokens. `openssl rand -base64 48` |
-| `API_KEY` | ✅ | **Setup key** for creating your account the first time, and the **initial iOS Shortcuts key**. `openssl rand -base64 24` |
+| `API_KEY` | | Initial **iOS Shortcuts key** (a random one is generated if unset; rotate it in Settings → Quick Logging). `openssl rand -base64 24` |
 | `MONGODB_DB` | | Database name (default `expy`) |
 | `ALLOWED_ORIGINS` | | Extra browser origins allowed to call the API. Your own domain is always allowed. |
 
@@ -64,9 +64,9 @@ To work on the frontend only, run `npm run dev`. The app still works; at sign-in
 ## 4. Deploy to Vercel
 
 1. Push the repo to GitHub, then **Vercel → Add New Project → Import**. The framework is detected as **Vite**.
-2. **Settings → Environment Variables**: add `MONGODB_URI`, `JWT_SECRET` and `API_KEY` for Production (and Preview if you use it).
+2. **Settings → Environment Variables**: add `MONGODB_URI` and `JWT_SECRET` (and optionally `API_KEY`) for Production (and Preview if you use it).
 3. Deploy. Alternatively, run `vercel --prod` from the CLI.
-4. Open `https://<your-app>.vercel.app`. You'll get **Set up Expy**: choose a password (8+ characters) and paste your `API_KEY` as the setup key. Setup only works once. After that, the screen is a normal sign-in.
+4. Open `https://<your-app>.vercel.app` **right away**. You'll get **Set up Expy**: choose a numeric password (8+ digits; the iPhone number pad opens). The first visitor sets the password and setup then closes for good, so do this immediately after deploying.
 
 The whole API is a single function (`api/index.js`), which keeps you well under the Hobby plan's function limit.
 
@@ -75,7 +75,7 @@ The whole API is a single function (`api/index.js`), which keeps you well under 
 | Method & path | Auth | Purpose |
 |---|---|---|
 | `GET /api/auth/status` | – | `{ configured }` |
-| `POST /api/auth/setup` | setup key | First-time password (bcrypt) → JWT |
+| `POST /api/auth/setup` | first visit only | First-time password (bcrypt) → JWT |
 | `POST /api/auth/login` | – | Password → JWT (30 days) |
 | `POST /api/auth/password` | JWT | Change password (signs out other devices) |
 | `GET/POST /api/{transactions,categories,budgets,settings}` | JWT | List / upsert (last-write-wins on `updatedAt`) |
@@ -96,7 +96,7 @@ Auth and Shortcut routes are rate-limited per IP: auth allows 10 requests per 15
 1. Open your Vercel URL in **Safari**, not Chrome. Add to Home Screen only works from Safari.
 2. Tap **Share → Add to Home Screen → Add**.
 3. Launch **Expy** from the icon. It opens full-screen, with no browser bars.
-4. Sign in. Your data syncs and is cached for offline use.
+4. Sign in with your numeric password. Your data syncs and is cached for offline use.
 
 ### Face ID
 

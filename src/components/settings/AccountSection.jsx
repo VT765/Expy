@@ -52,7 +52,7 @@ function ChangePasswordSheet({ open, onClose }) {
   const [form, setForm] = useState({ current: '', next: '', confirm: '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value.replace(/\D/g, '') }))
 
   const save = async () => {
     setError('')
@@ -83,9 +83,9 @@ function ChangePasswordSheet({ open, onClose }) {
       }
     >
       <div className="space-y-3 pt-1">
-        <input type="password" autoComplete="current-password" placeholder="Current password" value={form.current} onChange={set('current')} className={inputCls} />
-        <input type="password" autoComplete="new-password" placeholder="New password (8+ characters)" value={form.next} onChange={set('next')} className={inputCls} />
-        <input type="password" autoComplete="new-password" placeholder="Confirm new password" value={form.confirm} onChange={set('confirm')} className={inputCls} />
+        <input type="password" autoComplete="current-password" placeholder="Current password" inputMode="numeric" pattern="[0-9]*" value={form.current} onChange={set('current')} className={inputCls} />
+        <input type="password" autoComplete="new-password" placeholder="New password (8+ digits)" inputMode="numeric" pattern="[0-9]*" value={form.next} onChange={set('next')} className={inputCls} />
+        <input type="password" autoComplete="new-password" placeholder="Confirm new password" inputMode="numeric" pattern="[0-9]*" value={form.confirm} onChange={set('confirm')} className={inputCls} />
         <p className="min-h-5 px-1 text-footnote text-danger">{error}</p>
       </div>
     </BottomSheet>

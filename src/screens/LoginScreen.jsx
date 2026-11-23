@@ -6,13 +6,15 @@ import { useSyncStore } from '../store/useSyncStore'
 import { useUIStore } from '../store/useUIStore'
 
 const inputCls = 'h-14 w-full rounded-[16px] bg-raised px-4 text-body text-ink outline-none placeholder:text-faint'
+// Numeric password: iOS shows the number pad.
+const numeric = { inputMode: 'numeric', pattern: '[0-9]*' }
+const digitsOnly = (v) => v.replace(/\D/g, '')
 
 // Sign in (or first-time setup) in the app's design language.
 export default function LoginScreen() {
   const [status, setStatus] = useState('loading') // loading | setup | login | unreachable
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [setupKey, setSetupKey] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -32,7 +34,7 @@ export default function LoginScreen() {
     try {
       const { token } =
         status === 'setup'
-          ? await api('auth/setup', { method: 'POST', auth: false, body: { password, setupKey } })
+          ? await api('auth/setup', { method: 'POST', auth: false, body: { password } })
           : await api('auth/login', { method: 'POST', auth: false, body: { password } })
       useSyncStore.getState().login(token)
       useUIStore.getState().showToast(status === 'setup' ? 'Account created' : 'Signed in')
@@ -70,21 +72,22 @@ export default function LoginScreen() {
             <input
               type="password"
               autoComplete={status === 'setup' ? 'new-password' : 'current-password'}
-              placeholder="Password"
+              placeholder={status === 'setup' ? 'Password (8+ digits)' : 'Password'}
+              {...numeric}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(digitsOnly(e.target.value))}
               className={inputCls}
               autoFocus
             />
             {status === 'setup' && (
               <>
-                <input type="password" autoComplete="new-password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputCls} />
                 <input
                   type="password"
-                  autoComplete="off"
-                  placeholder="Setup key (API_KEY from Vercel)"
-                  value={setupKey}
-                  onChange={(e) => setSetupKey(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Confirm password"
+                  {...numeric}
+                  value={confirm}
+                  onChange={(e) => setConfirm(digitsOnly(e.target.value))}
                   className={inputCls}
                 />
               </>
@@ -92,7 +95,7 @@ export default function LoginScreen() {
             <p className="min-h-5 px-1 text-footnote text-danger" role="alert">
               {error}
             </p>
-            <Button type="submit" block loading={busy} disabled={!password || (status === 'setup' && (!confirm || !setupKey))}>
+            <Button type="submit" block loading={busy} disabled={!password || (status === 'setup' && (password.length < 8 || !confirm))}>
               {status === 'setup' ? 'Create account' : 'Sign in'}
             </Button>
           </div>

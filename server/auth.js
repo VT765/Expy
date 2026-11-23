@@ -27,15 +27,14 @@ export const safeEqual = (a, b) => {
 const sign = (doc) => jwt.sign({ sub: 'owner', v: doc.tokenVersion }, secret(), { expiresIn: TOKEN_TTL })
 
 export async function setup(db, body) {
+  // First visitor sets the password; afterwards setup is closed for good.
   if (await getAuthDoc(db)) throw new HttpError(409, 'Already set up. Sign in instead.')
-  if (!process.env.API_KEY) throw new HttpError(500, 'API_KEY must be set')
-  if (!safeEqual(body.setupKey ?? '', process.env.API_KEY)) throw new HttpError(403, 'Setup key is incorrect')
   const password = passwordSchema.parse(body.password)
   const doc = {
     _id: AUTH_ID,
     passwordHash: await bcrypt.hash(password, 12),
     tokenVersion: 1,
-    apiKey: process.env.API_KEY,
+    apiKey: process.env.API_KEY || `expy_${randomBytes(24).toString('base64url')}`,
     createdAt: Date.now(),
   }
   try {
